@@ -18,5 +18,16 @@
     <ClCompile Include="Programming-Lab14.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="input_helpers.c">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="structs.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="input-helpers.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

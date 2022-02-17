@@ -34,7 +34,7 @@ void enter_flight(flight* flight)
 			break;
 		}
 
-		printf("Enter 'y' if you want to add ont more flight day, else 'n':\n");
+		printf("Enter 'y' if you want to add one more flight day, else 'n':\n");
 		answer = getchar();
 		getchar();
 

@@ -139,7 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="input_helpers.c" />
+    <ClCompile Include="input-helpers.c" />
     <ClCompile Include="Programming-Lab14.c" />
   </ItemGroup>
   <ItemGroup>

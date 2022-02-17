@@ -18,7 +18,7 @@
     <ClCompile Include="Programming-Lab14.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="input_helpers.c">
+    <ClCompile Include="input-helpers.c">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>

@@ -2,38 +2,31 @@
 #include<stdlib.h>
 #include<string.h>
 
-#include "input-helpers.h" 
+#include "input-helpers.h"
+#include "output-helpers.h"
 
 #define FILE_NAME "flights.dat"
 
 FILE* file_pointer;
 
-void edit_action(flight flight_data, int flight_number, FILE** file_pointer)
+void edit_action(flight flight_data, const char* flight_number, FILE** file_pointer)
 {
-	if (flight_data.direction.number == flight_number)
+	if (!strcmp(flight_data.direction.number, flight_number))
 	{
 		enter_flight(&flight_data);
 	}
 	fwrite(&flight_data, sizeof(flight), 1, *file_pointer);
 }
 
-void delete_action(flight flight_data, int flight_number, FILE** file_pointer)
+void delete_action(flight flight_data, const char* flight_number, FILE** file_pointer)
 {
-	if (flight_data.direction.number != flight_number)
+	if (strcmp(flight_data.direction.number, flight_number))
 	{
 		fwrite(&flight_data, sizeof(flight), 1, *file_pointer);
 	}
 }
 
-void remove_infrequent_flights_action(flight flight_data, int min_flight_days_count, FILE** file_pointer)
-{
-	if (flight_data.direction.days_count >= min_flight_days_count)
-	{
-		fwrite(&flight_data, sizeof(flight), 1, *file_pointer);
-	}
-}
-
-void file_change_action(void(*change_action)(flight, int, FILE**), const char* comparer_name)
+void file_change_action(void(*change_action)(flight, const char*, FILE**), const char* comparer_name)
 {
 	fopen_s(&file_pointer, FILE_NAME, "r+b");
 	if (!file_pointer)
@@ -46,8 +39,8 @@ void file_change_action(void(*change_action)(flight, int, FILE**), const char* c
 	FILE* tmp_file_pointer;
 	fopen_s(&tmp_file_pointer, tmp_file_name, "wb");
 
-	int comparer;
-	enter_int(&comparer, comparer_name);
+	char comparer[MAX_SIZE];
+	enter_string(&comparer, comparer_name, 0);
 
 	flight flight_data;
 	fread(&flight_data, sizeof(flight), 1, file_pointer);
@@ -73,23 +66,21 @@ void output()
 		return;
 	}
 
+	int is_empty = 1;
 	flight flight_data;
 	fread(&flight_data, sizeof(flight), 1, file_pointer);
 	while (!feof(file_pointer))
 	{
-		printf("Flight number %d:\n", flight_data.direction.number);
-		printf(">> Flying days: %s", flight_data.direction.days[0]);
-		for (int i = 1; i < flight_data.direction.days_count; i++)
-		{
-			printf(", %s", flight_data.direction.days[i]);
-		}
-		printf("\n>> Plane type: %s\n", flight_data.plane.type);
-		printf(">> Seats number: %d\n", flight_data.plane.seats);
-		printf(">> Price: %d\n\n", flight_data.plane.price);
-
+		is_empty = 0;
+		print_flight(flight_data);
 		fread(&flight_data, sizeof(flight), 1, file_pointer);
 	}
 	fclose(file_pointer);
+
+	if (is_empty)
+	{
+		printf("Database is empty\n");
+	}
 }
 
 void add()
@@ -122,59 +113,47 @@ void task1()
 		return;
 	}
 
-	char days[MAX_FLIGHT_DAYS][MAX_SIZE];
-	int cheapest_flights[MAX_FLIGHT_DAYS];
+	short days;
+	enter_days(&days, 0);
+
+	char cheapest_flights[MAX_FLIGHT_DAYS][MAX_SIZE];
 	int min_prices[MAX_FLIGHT_DAYS];
-	int days_count = 0;
-	char answer;
-	do
+	for (int i = 0; i < MAX_FLIGHT_DAYS; i++)
 	{
-		enter_string(&days[days_count], "flight day");
-		cheapest_flights[days_count] = -1;
-		min_prices[days_count] = INT_MAX;
-		days_count++;
-
-		if (days_count == MAX_FLIGHT_DAYS)
-		{
-			break;
-		}
-
-		printf("Enter 'y' if you want to add one more flight day, else 'n':\n");
-		answer = getchar();
-		getchar();
-
-	} while (answer != 'n');
+		min_prices[i] = INT_MAX;
+	}
 
 	flight flight_data;
 	fread(&flight_data, sizeof(flight), 1, file_pointer);
-
 	while (!feof(file_pointer))
 	{
-		for (int i = 0; i < flight_data.direction.days_count; i++)
+		short common_days = flight_data.direction.days & days;
+		for (int day = 0; day < MAX_FLIGHT_DAYS && common_days; day++, common_days >>= 1)
 		{
-			for (int j = 0; j < days_count; j++)
+			if ((common_days & 1) && flight_data.plane.price < min_prices[day])
 			{
-				if (!strcmp(days[j], flight_data.direction.days[i]) && flight_data.plane.price < min_prices[j])
-				{
-					cheapest_flights[j] = flight_data.direction.number;
-					min_prices[j] = flight_data.plane.price;
-				}
+				strcpy_s(cheapest_flights[day], MAX_SIZE, flight_data.direction.number);
+				min_prices[day] = flight_data.plane.price;
 			}
 		}
+
 		fread(&flight_data, sizeof(flight), 1, file_pointer);
 	}
 	fclose(file_pointer);
 
 	printf("\nCheapest flights by days:\n");
-	for (int i = 0; i < days_count; i++)
+	for (int day = 0; day < MAX_FLIGHT_DAYS && days; day++, days >>= 1)
 	{
-		if (cheapest_flights[i] == -1)
+		if (days & 1)
 		{
-			printf("- %s: no flights available\n", days[i]);
-		}
-		else
-		{
-			printf("- %s: %d\n", days[i], cheapest_flights[i]);
+			if (min_prices[day] == INT_MAX)
+			{
+				printf("- %s: no flights available\n", week_days[day]);
+			}
+			else
+			{
+				printf("- %s: %s with price %d\n", week_days[day], cheapest_flights[day], min_prices[day]);
+			}
 		}
 	}
 }
@@ -188,56 +167,82 @@ void task2() //I need some help with storage of plane types
 		return;
 	}
 
-	char days[MAX_FLIGHT_DAYS][MAX_SIZE];
+	short days;
+	enter_days(&days, 0);
+
 	int seats_count[MAX_FLIGHT_DAYS];
-	int days_count = 0;
-	char answer;
-	do
+	for (int i = 0; i < MAX_FLIGHT_DAYS; i++)
 	{
-		enter_string(&days[days_count], "flight day");
-		seats_count[days_count] = 0;
-		days_count++;
-
-		if (days_count == MAX_FLIGHT_DAYS)
-		{
-			break;
-		}
-
-		printf("Enter 'y' if you want to add one more flight day, else 'n':\n");
-		answer = getchar();
-		getchar();
-
-	} while (answer != 'n');
+		seats_count[i] = 0;
+	}
 
 	flight flight_data;
 	fread(&flight_data, sizeof(flight), 1, file_pointer);
 
 	while (!feof(file_pointer))
 	{
-		for (int i = 0; i < flight_data.direction.days_count; i++)
+		short common_days = flight_data.direction.days & days;
+		for (int day = 0; day < MAX_FLIGHT_DAYS && common_days; day++, common_days >>= 1)
 		{
-			for (int j = 0; j < days_count; j++)
+			if (common_days & 1)
 			{
-				if (!strcmp(days[j], flight_data.direction.days[i]))
-				{
-					seats_count[j] += flight_data.plane.seats;
-				}
+				seats_count[day] += flight_data.plane.seats;
 			}
 		}
+
 		fread(&flight_data, sizeof(flight), 1, file_pointer);
 	}
 	fclose(file_pointer);
 
 	printf("\nTotal seats by flight days:\n");
-	for (int i = 0; i < days_count; i++)
+	for (int day = 0; day < MAX_FLIGHT_DAYS && days; day++, days >>= 1)
 	{
-		printf("- %s: %d\n", days[i], seats_count[i]);
+		if (days & 1)
+		{
+			printf("- %s: %d\n", week_days[day], seats_count[day]);
+		}
 	}
 }
 
 void task3()
 {
-	file_change_action(remove_infrequent_flights_action, "minimum number of flight days");
+	fopen_s(&file_pointer, FILE_NAME, "r+b");
+	if (!file_pointer)
+	{
+		printf("Database do not exist!\n");
+		return;
+	}
+
+	const char* tmp_file_name = "temp.dat";
+	FILE* tmp_file_pointer;
+	fopen_s(&tmp_file_pointer, tmp_file_name, "wb");
+
+	flight flight_data;
+	fread(&flight_data, sizeof(flight), 1, file_pointer);
+	while (!feof(file_pointer))
+	{
+		int days = flight_data.direction.days;
+		int days_count = 0;
+		for (int i = 0; i < MAX_FLIGHT_DAYS && days; i++, days >>= 1)
+		{
+			if (days & 1)
+			{
+				days_count++;
+			}
+		}
+
+		if (days_count >= 2)
+		{
+			fwrite(&tmp_file_pointer, sizeof(flight), 1, file_pointer);
+		}
+		fread(&flight_data, sizeof(flight), 1, file_pointer);
+	}
+
+	fclose(file_pointer);
+	fclose(tmp_file_pointer);
+
+	remove(FILE_NAME);
+	rename(tmp_file_name, FILE_NAME);
 }
 
 void main()
@@ -257,7 +262,7 @@ void main()
 		printf("8. Exit\n\n");
 
 		int key;
-		enter_int(&key, "menu item");
+		enter_int(&key, "menu item", 0);
 		system("cls");
 
 		switch (key)

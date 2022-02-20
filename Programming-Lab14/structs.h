@@ -5,9 +5,8 @@
 
 typedef struct
 {
-	char days[MAX_FLIGHT_DAYS][MAX_SIZE];
-	int number;
-	int days_count;
+	short days;
+	char number[MAX_SIZE];
 } direction;
 
 typedef struct

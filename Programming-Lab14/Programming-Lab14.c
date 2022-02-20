@@ -6,63 +6,87 @@
 #include "output-helpers.h"
 
 #define FILE_NAME "flights.dat"
+#define TMP_FILE_NAME "tmp.dat"
 
 FILE* file_pointer;
 
-void edit_action(flight flight_data, const char* flight_number, FILE** file_pointer)
+int file_exists()
 {
+	fopen_s(&file_pointer, FILE_NAME, "rb");
+	if (!file_pointer)
+	{
+		printf("Database does not exist!\n");
+		return 0;
+	}
+	return 1;
+}
+
+int edit_action(flight flight_data, const char* flight_number, FILE** file_pointer)
+{
+	int is_changed = 0;
 	if (!strcmp(flight_data.direction.number, flight_number))
 	{
 		enter_flight(&flight_data);
+		is_changed = 1;
+		printf("Flight data successfully edited\n");
 	}
 	fwrite(&flight_data, sizeof(flight), 1, *file_pointer);
+	return is_changed;
 }
 
-void delete_action(flight flight_data, const char* flight_number, FILE** file_pointer)
+int delete_action(flight flight_data, const char* flight_number, FILE** file_pointer)
 {
 	if (strcmp(flight_data.direction.number, flight_number))
 	{
 		fwrite(&flight_data, sizeof(flight), 1, *file_pointer);
+		return 0;
 	}
+	printf("Flight data successfully deleted\n");
+	return 1;
 }
 
-void file_change_action(void(*change_action)(flight, const char*, FILE**), const char* comparer_name)
+void file_change_action(int(*change_action)(flight, const char*, FILE**), const char* comparer_name)
 {
-	fopen_s(&file_pointer, FILE_NAME, "r+b");
-	if (!file_pointer)
+	if (!file_exists())
 	{
-		printf("Database do not exist!\n");
 		return;
 	}
 
-	const char* tmp_file_name = "temp.dat";
 	FILE* tmp_file_pointer;
-	fopen_s(&tmp_file_pointer, tmp_file_name, "wb");
+	fopen_s(&tmp_file_pointer, TMP_FILE_NAME, "wb");
 
 	char comparer[MAX_SIZE];
 	enter_string(&comparer, comparer_name, 0);
+
+	int is_changed = 0;
 
 	flight flight_data;
 	fread(&flight_data, sizeof(flight), 1, file_pointer);
 	while (!feof(file_pointer))
 	{
-		change_action(flight_data, comparer, &tmp_file_pointer);
+		if (change_action(flight_data, comparer, &tmp_file_pointer))
+		{
+			is_changed = 1;
+		}
 		fread(&flight_data, sizeof(flight), 1, file_pointer);
+	}
+
+	if (!is_changed)
+	{
+		printf("This flight is not in the database\n");
 	}
 
 	fclose(file_pointer);
 	fclose(tmp_file_pointer);
 
 	remove(FILE_NAME);
-	rename(tmp_file_name, FILE_NAME);
+	rename(TMP_FILE_NAME, FILE_NAME);
 }
 
 void output()
 {
-	fopen_s(&file_pointer, FILE_NAME, "rb");
-	if (!file_pointer)
+	if (!file_exists())
 	{
-		printf("Database do not exist!\n");
 		return;
 	}
 
@@ -106,10 +130,8 @@ void delete()
 
 void task1()
 {
-	fopen_s(&file_pointer, FILE_NAME, "rb");
-	if (!file_pointer)
+	if (!file_exists())
 	{
-		printf("Database do not exist!\n");
 		return;
 	}
 
@@ -158,12 +180,10 @@ void task1()
 	}
 }
 
-void task2() //I need some help with storage of plane types
+void task2()
 {
-	fopen_s(&file_pointer, FILE_NAME, "rb");
-	if (!file_pointer)
+	if (!file_exists())
 	{
-		printf("Database do not exist!\n");
 		return;
 	}
 
@@ -206,16 +226,13 @@ void task2() //I need some help with storage of plane types
 
 void task3()
 {
-	fopen_s(&file_pointer, FILE_NAME, "r+b");
-	if (!file_pointer)
+	if (!file_exists())
 	{
-		printf("Database do not exist!\n");
 		return;
 	}
 
-	const char* tmp_file_name = "temp.dat";
 	FILE* tmp_file_pointer;
-	fopen_s(&tmp_file_pointer, tmp_file_name, "wb");
+	fopen_s(&tmp_file_pointer, TMP_FILE_NAME, "wb");
 
 	flight flight_data;
 	fread(&flight_data, sizeof(flight), 1, file_pointer);
@@ -233,16 +250,18 @@ void task3()
 
 		if (days_count >= 2)
 		{
-			fwrite(&tmp_file_pointer, sizeof(flight), 1, file_pointer);
+			fwrite(&flight_data, sizeof(flight), 1, tmp_file_pointer);
 		}
 		fread(&flight_data, sizeof(flight), 1, file_pointer);
 	}
+
+	printf("Task successfully completed\n");
 
 	fclose(file_pointer);
 	fclose(tmp_file_pointer);
 
 	remove(FILE_NAME);
-	rename(tmp_file_name, FILE_NAME);
+	rename(TMP_FILE_NAME, FILE_NAME);
 }
 
 void main()
@@ -292,11 +311,11 @@ void main()
 			exit(0);
 			break;
 		default:
-			printf("Try one more time...\n");
+			printf("Try one more time...");
 			break;
 		}
 
-		printf("Press any key...\n");
+		printf("\nPress any key...");
 		getchar();
 	}
 }

@@ -190,11 +190,15 @@ void task2()
 	short days;
 	enter_days(&days, 0);
 
+	char plane_types[MAX_FLIGHT_DAYS][MAX_SIZE][MAX_SIZE];
+	int types_count[MAX_FLIGHT_DAYS];
 	int seats_count[MAX_FLIGHT_DAYS];
 	for (int i = 0; i < MAX_FLIGHT_DAYS; i++)
 	{
+		types_count[i] = 0;
 		seats_count[i] = 0;
 	}
+
 
 	flight flight_data;
 	fread(&flight_data, sizeof(flight), 1, file_pointer);
@@ -207,6 +211,20 @@ void task2()
 			if (common_days & 1)
 			{
 				seats_count[day] += flight_data.plane.seats;
+
+				int in_list = 0;
+				for (int i = 0; i < types_count[day]; i++)
+				{
+					if (!strcmp(flight_data.plane.type, plane_types[day][i]))
+					{
+						in_list = 1;
+						break;
+					}
+				}
+				if (!in_list)
+				{
+					strcpy_s(plane_types[day][types_count[day]++], MAX_SIZE, flight_data.plane.type);
+				}
 			}
 		}
 
@@ -214,12 +232,26 @@ void task2()
 	}
 	fclose(file_pointer);
 
-	printf("\nTotal seats by flight days:\n");
+	printf("\nTotal seats and plane types by flight days:\n");
 	for (int day = 0; day < MAX_FLIGHT_DAYS && days; day++, days >>= 1)
 	{
 		if (days & 1)
 		{
-			printf("- %s: %d\n", week_days[day], seats_count[day]);
+			printf("%s:\n", week_days[day]);
+			if (types_count[day])
+			{
+				printf("- seats count: %d\n", seats_count[day]);
+				printf("- plane types: %s", plane_types[day][0]);
+				for (int i = 1; i < types_count[day]; i++)
+				{
+					printf(", %s", plane_types[day][i]);
+				}
+				printf("\n");
+			}
+			else
+			{
+				printf("- no flights available\n");
+			}
 		}
 	}
 }

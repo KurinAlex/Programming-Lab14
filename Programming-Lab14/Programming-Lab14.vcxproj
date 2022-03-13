@@ -139,7 +139,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="input-helpers.c" />
+    <ClCompile Include="math-helpers.c" />
+    <ClCompile Include="output-helpers.c" />
     <ClCompile Include="Programming-Lab14.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="input-helpers.h" />
+    <ClInclude Include="math-helpers.h" />
+    <ClInclude Include="output-helpers.h" />
+    <ClInclude Include="structs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

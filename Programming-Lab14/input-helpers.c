@@ -1,5 +1,3 @@
-#pragma once
-
 #include <stdio.h>
 
 #include "input-helpers.h"
